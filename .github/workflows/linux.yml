@@ -131,6 +131,17 @@ jobs:
             windows/release/SHA256SUMS
           retention-days: 3
 
+      # Raw sidecar pair for embedding in other apps (DCode): the app binary
+      # plus the hook relay, no installer wrapping.
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.publish == 'true'
+        with:
+          name: Wisp-Linux-portable
+          path: |
+            windows/target/release/wisp
+            windows/target/release/wisp-hook
+          retention-days: 3
+
   publish:
     needs: build
     # Checked again here, so a pull request can never get this far whatever
