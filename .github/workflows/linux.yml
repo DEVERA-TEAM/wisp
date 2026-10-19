@@ -160,6 +160,11 @@ jobs:
           name: Wisp-Linux
           path: release
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: Wisp-Linux-portable
+          path: portable
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -182,6 +187,8 @@ jobs:
             "release/Wisp-Linux-$v-x86_64.AppImage" \
             "release/Wisp-Linux-$v-amd64.deb" \
             "release/Wisp-Linux-$v-x86_64.rpm" \
+            "portable/wisp" \
+            "portable/wisp-hook" \
             "release/SHA256SUMS" \
             --title "Wisp for Linux $v" \
             --notes "$notes" \
