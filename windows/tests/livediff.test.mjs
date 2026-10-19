@@ -78,7 +78,7 @@ test("Write and MultiEdit are diffed too; other tools and PreToolUse are not", (
 
 test("an edit with no change, or one the relay had to cut, adds no diff", () => {
   hook({ hook_event_name: "PostToolUse", tool_name: "Edit", tool_input: { file_path: "/p/a.ts", old_string: "same", new_string: "same" } });
-  edit({ coucou_diff_truncated: true });
+  edit({ wisp_diff_truncated: true });
   assert.deepEqual(task().steps, []);
   assert.equal(diffs().length, 0);
 });

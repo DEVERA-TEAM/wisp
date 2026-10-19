@@ -1,13 +1,13 @@
-//! coucou-hook — the relay Claude Code (and every other agent) runs on each hook
+//! wisp-hook — the relay Claude Code (and every other agent) runs on each hook
 //! event.
 //!
 //! Reads the hook JSON on stdin, maps the agent's event and field names onto
 //! Claude Code's (normalize.rs), adds a little terminal context, and hands it to
-//! Coucou over the named pipe `\\.\pipe\coucou-<sid>` (Windows) or the Unix
-//! socket `$XDG_RUNTIME_DIR/coucou.sock` (Linux).
+//! Wisp over the named pipe `\\.\pipe\wisp-<sid>` (Windows) or the Unix
+//! socket `$XDG_RUNTIME_DIR/wisp.sock` (Linux).
 //!
 //! Hard rule (docs/CLAUDE.md): **never block the agent.**
-//! * If the pipe does not exist — Coucou is closed — we exit 0 immediately, with
+//! * If the pipe does not exist — Wisp is closed — we exit 0 immediately, with
 //!   only the "no opinion" reply the agent expects (reply.rs), and the session
 //!   carries on untouched.
 //! * Every step runs under a deadline enforced by the main thread, so a pipe that
@@ -15,11 +15,11 @@
 //!   either: we abandon the worker and exit.
 //! * Only `PermissionRequest` waits for an answer, because approving from the
 //!   island is the whole point. No answer means no decision, and the agent asks
-//!   in its terminal exactly as if Coucou were not installed.
+//!   in its terminal exactly as if Wisp were not installed.
 //!
-//! Usage: `coucou-hook [--agent <name>] [<EventName>]` (the event name is also
+//! Usage: `wisp-hook [--agent <name>] [<EventName>]` (the event name is also
 //! read from the JSON; `--agent` is absent for Claude Code), or
-//! `coucou-hook --statusline` as Claude Code's status line command (plan usage,
+//! `wisp-hook --statusline` as Claude Code's status line command (plan usage,
 //! see statusline.rs): it passes the plan limits on and runs the status line the
 //! user had before, so that keeps working.
 
@@ -202,7 +202,7 @@ fn prepare(raw: &[u8], args: &Args, env: &dyn Fn(&str) -> Option<String>, cwd: &
     Some(Event { line, name, question })
 }
 
-/// Which terminal the session runs in. Unlike macOS, Coucou here accepts events
+/// Which terminal the session runs in. Unlike macOS, Wisp here accepts events
 /// from every terminal, so this is context only — never a filter.
 fn add_terminal_context(map: &mut Map<String, Value>, env: &dyn Fn(&str) -> Option<String>) {
     for (key, var) in [
@@ -244,7 +244,7 @@ fn term_editor(env: &dyn Fn(&str) -> Option<String>) -> Option<&'static str> {
 
 /// Caps the strings of a payload: every field to MAX_FIELD_LEN, except the edit
 /// strings of a finished Edit / MultiEdit / Write, which the live diff needs
-/// whole. If even those had to be cut, `coucou_diff_truncated` tells the island
+/// whole. If even those had to be cut, `wisp_diff_truncated` tells the island
 /// not to show counts it cannot trust.
 fn truncate_payload(payload: &mut serde_json::Value, event: &str) {
     let keeps_diff = event == "PostToolUse"
@@ -267,7 +267,7 @@ fn truncate_payload(payload: &mut serde_json::Value, event: &str) {
         if let Some(map) = payload.as_object_mut() {
             map.insert("tool_input".into(), input);
             if cut_any {
-                map.insert("coucou_diff_truncated".into(), serde_json::Value::Bool(true));
+                map.insert("wisp_diff_truncated".into(), serde_json::Value::Bool(true));
             }
         }
     }
@@ -498,7 +498,7 @@ mod tests {
         assert_eq!(v["tool_input"]["new_string"].as_str().unwrap().len(), big.len());
         // Everything else keeps the ordinary cap, and nothing says "cut".
         assert!(v["cwd"].as_str().unwrap().len() <= MAX_FIELD_LEN + 4);
-        assert!(v.get("coucou_diff_truncated").is_none());
+        assert!(v.get("wisp_diff_truncated").is_none());
 
         let mut multi = serde_json::json!({
             "tool_name": "MultiEdit",
@@ -527,7 +527,7 @@ mod tests {
         });
         truncate_payload(&mut v, "PostToolUse");
         assert!(v["tool_input"]["content"].as_str().unwrap().len() <= MAX_DIFF_FIELD_LEN + 4);
-        assert_eq!(v["coucou_diff_truncated"], serde_json::Value::Bool(true));
+        assert_eq!(v["wisp_diff_truncated"], serde_json::Value::Bool(true));
 
         // Together, the edit strings never pass the shared budget.
         let half = "y".repeat(MAX_DIFF_FIELD_LEN - 1);
@@ -537,6 +537,6 @@ mod tests {
         let mut multi = serde_json::json!({ "tool_name": "MultiEdit", "tool_input": { "edits": edits } });
         truncate_payload(&mut multi, "PostToolUse");
         assert!(multi.to_string().len() < MAX_DIFF_TOTAL + 64 * 1024);
-        assert_eq!(multi["coucou_diff_truncated"], serde_json::Value::Bool(true));
+        assert_eq!(multi["wisp_diff_truncated"], serde_json::Value::Bool(true));
     }
 }

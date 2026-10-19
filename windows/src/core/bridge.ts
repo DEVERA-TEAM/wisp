@@ -17,7 +17,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[coucou] ${cmd} failed`, err);
+    console.error(`[wisp] ${cmd} failed`, err);
     return null;
   }
 }
@@ -234,12 +234,12 @@ export const Bridge = {
 
   openSettingsWindow: () => call<void>("open_settings_window"),
 
-  /** Writes to %LOCALAPPDATA%\Coucou\coucou.log, next to the Rust lines. */
+  /** Writes to %LOCALAPPDATA%\Wisp\wisp.log, next to the Rust lines. */
   log: (message: string) => call<void>("log_line", { message }),
 
   // ── Claude Code hooks ─────────────────────────────────────────────────────
   hooksStatus: () => call<HookStatus>("hooks_status"),
-  /** Pill ID → whether that agent's hooks reach Coucou (read-only, Mac #183). */
+  /** Pill ID → whether that agent's hooks reach Wisp (read-only, Mac #183). */
   agentHooksStatus: () => call<Record<string, boolean>>("agent_hooks_status"),
   /** Diff to show before anything is written. `install: false` previews removal. */
   hooksPreview: (install: boolean) => callOrThrow<HookPreview>("hooks_preview", { install }),
@@ -285,7 +285,7 @@ export const Bridge = {
   /** "Nobody can act on this" — Claude Code asks in the terminal right away. */
   approvalDecline: (requestId: string) => call<void>("approval_decline", { requestId }),
 
-  // ── Phone link (Coucou for Android) ───────────────────────────────────────
+  // ── Phone link (Wisp for Android) ───────────────────────────────────────
   phoneLinkStatus: () => call<PhoneLinkStatus>("phone_link_status"),
   /** Only ever from the switch in Settings. Throws with the reason if it cannot start. */
   phoneLinkSetEnabled: (enabled: boolean) => callOrThrow<PhoneLinkStatus>("phone_link_set_enabled", { enabled }),
@@ -323,7 +323,7 @@ export const Bridge = {
   phoneLinkPublish: (sessions: PhoneLinkSession[], approval: PhoneLinkApproval | null) =>
     call<void>("phone_link_publish", { sessions, approval }),
   phoneLinkPublishQuestion: (question: PhoneLinkQuestion | null) => call<void>("phone_link_publish_question", { question }),
-  /** What Mochi wears ("auto" or an outfit), for phones that asked for it. */
+  /** What Wisp wears ("auto" or an outfit), for phones that asked for it. */
   phoneLinkPublishPrefs: (outfit: string) => call<void>("phone_link_publish_prefs", { outfit }),
 
   // ── Chat, files, secrets ──────────────────────────────────────────────────
@@ -379,25 +379,25 @@ export const Bridge = {
   /** Opens the folder of the image saved last. */
   recapRevealSaved: () => call<void>("recap_reveal_saved"),
 
-  // ── Mochi on the desktop (src-tauri/src/desktop.rs) ───────────────────────
-  desktopInfo: () => call<DesktopInfo>("desktop_mochi_info"),
+  // ── Wisp on the desktop (src-tauri/src/desktop.rs) ───────────────────────
+  desktopInfo: () => call<DesktopInfo>("desktop_wisp_info"),
   /** Dragged out of the island: (x, y) is the pointer in island-window coordinates. */
-  desktopPickUp: (x: number, y: number) => call<boolean>("desktop_mochi_pick_up", { x, y }),
+  desktopPickUp: (x: number, y: number) => call<boolean>("desktop_wisp_pick_up", { x, y }),
   /** Linux: the pointer moved during that drag (Windows carries him from Rust). */
-  desktopCarry: (x: number, y: number) => call<void>("desktop_mochi_carry", { x, y }),
-  desktopCarryEnd: (x: number, y: number) => call<void>("desktop_mochi_carry_end", { x, y }),
-  /** A drag started on the desktop Mochi; resolves to his top-left corner. */
-  desktopDragBegin: () => call<[number, number] | null>("desktop_mochi_drag_begin"),
+  desktopCarry: (x: number, y: number) => call<void>("desktop_wisp_carry", { x, y }),
+  desktopCarryEnd: (x: number, y: number) => call<void>("desktop_wisp_carry_end", { x, y }),
+  /** A drag started on the desktop Wisp; resolves to his top-left corner. */
+  desktopDragBegin: () => call<[number, number] | null>("desktop_wisp_drag_begin"),
   /** X11: top-left corner, physical pixels. */
-  desktopDragMove: (x: number, y: number) => call<void>("desktop_mochi_drag_move", { x, y }),
-  desktopDragEnd: (x: number, y: number) => call<void>("desktop_mochi_drag_end", { x, y }),
+  desktopDragMove: (x: number, y: number) => call<void>("desktop_wisp_drag_move", { x, y }),
+  desktopDragEnd: (x: number, y: number) => call<void>("desktop_wisp_drag_end", { x, y }),
   /** From the island to his spot. False: no spot on any connected display.
    *  `anywhere`: the first-visit corner then, rather than staying home. */
-  desktopFlyOut: (anywhere = false) => call<boolean>("desktop_mochi_fly_out", { anywhere }),
+  desktopFlyOut: (anywhere = false) => call<boolean>("desktop_wisp_fly_out", { anywhere }),
   /** To the island, then hidden. `forget`: he lives in the island again. */
-  desktopFlyHome: (forget: boolean) => call<boolean>("desktop_mochi_fly_home", { forget }),
+  desktopFlyHome: (forget: boolean) => call<boolean>("desktop_wisp_fly_home", { forget }),
   /** Asleep, the cursor poll stops. */
-  desktopSetAsleep: (asleep: boolean) => call<void>("desktop_mochi_set_asleep", { asleep }),
+  desktopSetAsleep: (asleep: boolean) => call<void>("desktop_wisp_set_asleep", { asleep }),
 
   // ── Spotify (src-tauri/src/spotify.rs) ────────────────────────────────────
   /** Reads the player again (the card came on screen) and reports it. */
@@ -430,7 +430,7 @@ export interface ShortcutsReport {
   portal?: "pending" | "active" | null;
 }
 
-/** How the desktop Mochi's window works here (platform::DesktopMode). */
+/** How the desktop Wisp's window works here (platform::DesktopMode). */
 export type DesktopMode = "poll" | "window" | "layer" | "off";
 
 export interface DesktopInfo {
@@ -439,13 +439,13 @@ export interface DesktopInfo {
   onDesktop: boolean;
 }
 
-/** An event for one window only (island ⇄ desktop Mochi). Never throws. */
+/** An event for one window only (island ⇄ desktop Wisp). Never throws. */
 export async function emitToWindow(label: string, event: string, payload?: unknown) {
   if (!IS_TAURI) return;
   try {
     await emitTo(label, event, payload);
   } catch (err) {
-    console.error(`[coucou] emit ${event} failed`, err);
+    console.error(`[wisp] emit ${event} failed`, err);
   }
 }
 
@@ -481,7 +481,7 @@ export interface DroppedFile {
 
 export interface HookStatus {
   installed: boolean;
-  /** Coucou's status line relay (plan usage) is the status line in settings.json. */
+  /** Wisp's status line relay (plan usage) is the status line in settings.json. */
   planRelayInstalled: boolean;
   settingsPath: string;
   hookPath: string;
@@ -494,7 +494,7 @@ export interface AgentHookStatus {
   id: string;
   name: string;
   installed: boolean;
-  /** The file (or files, one per line) Coucou writes. */
+  /** The file (or files, one per line) Wisp writes. */
   path: string;
   hookReady: boolean;
   /** The island can allow or deny this agent's permission requests. */
@@ -521,7 +521,7 @@ export interface HookPreview {
 
 /** Same as `call`, but surfaces the error so the UI can show what went wrong. */
 async function callOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (!IS_TAURI) throw new Error("not running inside Coucou");
+  if (!IS_TAURI) throw new Error("not running inside Wisp");
   return invoke<T>(cmd, args);
 }
 
@@ -585,7 +585,7 @@ export async function onDragDrop(handler: (e: DragDropPayload) => void) {
       handler({ type: "drop", paths: [] });
       return;
     }
-    webview.postMessageWithAdditionalObjects("coucou-file-drop", files);
+    webview.postMessageWithAdditionalObjects("wisp-file-drop", files);
   };
 
   window.addEventListener("dragenter", onEnter);
