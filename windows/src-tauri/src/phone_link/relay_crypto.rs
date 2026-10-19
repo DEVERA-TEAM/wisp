@@ -15,7 +15,12 @@
 
 use ring::{aead, hkdf, hmac};
 
-pub const LABEL: &str = "wisp-relay/v1";
+// Wire protocol stays byte-identical to upstream on purpose: the label feeds
+// HKDF and frame headers covered by shared test vectors
+// (android/relay/test-vectors.json, also read by the Kotlin twin). Desktop
+// isolation between Wisp and upstream builds comes from the relay socket and
+// pipe names, not from this label. Phone apps are out of scope for Wisp v1.
+pub const LABEL: &str = "coucou-relay/v1";
 pub const VER: u8 = 1;
 pub const T_INIT: u8 = 1;
 pub const T_ACCEPT: u8 = 2;

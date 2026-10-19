@@ -1182,37 +1182,3 @@ export class BotEngine {
   }
 }
 
-/** Ray → rounded-rect boundary intersection, for the mailbox morph. */
-function rrPoint(ca: number, sa: number, W: number, H: number, cr: number): { x: number; y: number } {
-  const eps = 1e-6;
-  const kx = ca >= 0 ? 1 : -1;
-  const ky = sa >= 0 ? 1 : -1;
-  const cx = kx * (W - cr);
-  const cy = ky * (H - cr);
-
-  const dot = ca * cx + sa * cy;
-  const disc = dot * dot - (cx * cx + cy * cy - cr * cr);
-  if (disc >= 0) {
-    const t = dot + Math.sqrt(disc);
-    if (t > eps) {
-      const px = ca * t;
-      const py = sa * t;
-      if (Math.abs(px) >= W - cr - eps && Math.abs(py) >= H - cr - eps) return { x: px, y: py };
-    }
-  }
-  if (Math.abs(sa) > eps) {
-    const t = (ky * H) / sa;
-    if (t > eps) {
-      const px = ca * t;
-      if (Math.abs(px) <= W - cr + eps) return { x: px, y: ky * H };
-    }
-  }
-  if (Math.abs(ca) > eps) {
-    const t = (kx * W) / ca;
-    if (t > eps) {
-      const py = sa * t;
-      if (Math.abs(py) <= H - cr + eps) return { x: kx * W, y: py };
-    }
-  }
-  return { x: kx * W, y: ky * H };
-}

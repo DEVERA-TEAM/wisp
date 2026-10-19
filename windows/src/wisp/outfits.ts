@@ -43,7 +43,7 @@ function layerAlpha(st: OutfitState): number {
 }
 
 /** The halo behind the orb. `ctx` is in body space. */
-export function drawOutfitBehind(ctx: Ctx, outfit: Outfit, R: number, st: OutfitState) {
+export function drawAuraBehind(ctx: Ctx, outfit: Outfit, R: number, st: OutfitState) {
   if (outfit === "none") return;
   const alpha = layerAlpha(st);
   if (alpha <= 0.005) return;
@@ -57,7 +57,7 @@ export function drawOutfitBehind(ctx: Ctx, outfit: Outfit, R: number, st: Outfit
 }
 
 /** The thin ring in front of the orb, drawn after the body and the eyes. */
-export function drawOutfitFront(ctx: Ctx, outfit: Outfit, R: number, st: OutfitState) {
+export function drawAuraFront(ctx: Ctx, outfit: Outfit, R: number, st: OutfitState) {
   if (outfit === "none") return;
   const alpha = layerAlpha(st);
   if (alpha <= 0.005) return;
@@ -81,7 +81,7 @@ function iconWisp(ctx: Ctx, size: number, outfit: Outfit) {
   const st: OutfitState = { presence: 1, morph: 0 };
   ctx.save();
   ctx.translate(cx, cy);
-  drawOutfitBehind(ctx, outfit, R, st);
+  drawAuraBehind(ctx, outfit, R, st);
   const g = ctx.createLinearGradient(0, -R, 0, R);
   g.addColorStop(0, "#CFFAFE");
   g.addColorStop(1, "#31317F");
@@ -95,7 +95,7 @@ function iconWisp(ctx: Ctx, size: number, outfit: Outfit) {
     ctx.arc(sd * R * 0.32, -R * 0.06, R * 0.13, 0, Math.PI * 2);
     ctx.fill();
   }
-  drawOutfitFront(ctx, outfit, R, st);
+  drawAuraFront(ctx, outfit, R, st);
   ctx.restore();
 }
 
