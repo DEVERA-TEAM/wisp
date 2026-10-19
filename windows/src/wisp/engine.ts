@@ -7,7 +7,7 @@
 import { Ease, lerp, type EaseFn } from "../core/anim";
 import { Sound } from "../core/sound";
 import type { BotEmoteName, BotStateName } from "../core/layout";
-import { PUMPKIN_BODY, drawOutfitBehind, drawOutfitFront, makeHead } from "./outfits";
+import { drawAuraBehind, drawAuraFront } from "./outfits";
 import type { Outfit } from "./wardrobe";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -67,9 +67,10 @@ const EYE_W = 0.25;
 const EYE_H = 0.27;
 const EYE_SP = 0.37;
 const EYE_P = -0.12;
-const BASE_TOP: RGB = [0.929, 0.929, 0.937]; // #EDEDEF
-const BASE_BOTTOM: RGB = [0.769, 0.773, 0.792]; // #C4C5CA
-const INK = "rgb(26,20,18)"; // #1A1412
+const BASE_TOP: RGB = [0.812, 0.98, 0.996]; // #CFFAFE pale aqua
+const BASE_BOTTOM: RGB = [0.192, 0.18, 0.506]; // #31317F deep indigo
+const INK = "rgb(15,23,42)"; // #0F172A night blue
+const HALO: RGB = [0.176, 0.831, 0.749]; // #2DD4BF teal halo
 const MINI_INK = "rgb(16,19,26)"; // #10131A
 
 const C = {
@@ -786,39 +787,23 @@ export class BotEngine {
       x.translate(-cx, -cy);
     }
 
-    this.drawHandsBehind(x, R, rx, ry, cx, cy);
+    const dressed = !this.isMini && this.outfit !== "none";
+    const aura = dressed ? { presence: this.outfitPresence, morph: this.morph } : null;
 
     x.save();
     x.translate(cx, cy);
     if (this.tilt !== 0) x.rotate(this.tilt);
     x.scale(this.sx, this.sy);
 
-    const dressed = !this.isMini && this.outfit !== "none";
-    const head = dressed ? makeHead(R, this.yaw, this.pitch, this.physDx, this.physDy) : null;
-    const outfitState = { presence: this.outfitPresence, morph: this.morph };
-    if (head) drawOutfitBehind(x, this.outfit, head, outfitState);
+    if (aura) drawAuraBehind(x, this.outfit, R, aura);
 
     const body = this.bodyPath(rx, ry, R);
     this.drawBody(x, body, R, rx, ry);
 
-    const blushVal = Math.max(this.blush, this.tint * 0.5) * (1 - this.morph);
-    if (blushVal > 0.01) {
-      x.save();
-      x.clip(body);
-      const yOffset = Math.sin(this.yaw) * rx * 0.8;
-      x.fillStyle = `rgba(255,120,150,${0.5 * blushVal})`;
-      for (const sd of [-1, 1]) {
-        x.beginPath();
-        x.ellipse(sd * rx * 0.55 + yOffset, ry * 0.2, R * 0.17, R * 0.1, 0, 0, Math.PI * 2);
-        x.fill();
-      }
-      x.restore();
-    }
-
     this.drawEyes(x, body, R, rx, ry);
     if (this.morph > 0.05) this.drawMouth(x, body, R);
 
-    if (head) drawOutfitFront(x, this.outfit, head, outfitState);
+    if (aura) drawAuraFront(x, this.outfit, R, aura);
 
     x.restore();
     x.restore();
@@ -829,65 +814,40 @@ export class BotEngine {
     this.drawParticles(x, R, cx, cy);
   }
 
+  /** Wisp is an orb: a plain circle, the same in every state. */
   private bodyPath(rx: number, ry: number, R: number): Path2D {
-    const n = 72;
-    const expN = 2.0 / 2.7;
-    const tw = R * 1.0;
-    const th = R * 0.94;
-    const tr = R * 0.42;
+    void rx;
+    void ry;
     const p = new Path2D();
-    const m = this.morph;
-    for (let i = 0; i <= n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const ca = Math.cos(a);
-      const sa = Math.sin(a);
-      const px0 = rx * (ca >= 0 ? Math.pow(ca, expN) : -Math.pow(-ca, expN));
-      const py0 = ry * (sa >= 0 ? Math.pow(sa, expN) : -Math.pow(-sa, expN));
-      let px = px0;
-      let py = py0;
-      if (m >= 0.005) {
-        const rr = rrPoint(ca, sa, tw, th, tr);
-        px = lerp(px0, rr.x, m);
-        py = lerp(py0, rr.y, m);
-      }
-      if (i === 0) p.moveTo(px, py);
-      else p.lineTo(px, py);
-    }
+    p.arc(0, 0, R, 0, Math.PI * 2);
     p.closePath();
     return p;
   }
 
-  /** How much of the pumpkin's orange shows on the body (it comes and goes with the outfit). */
-  private get pumpkinAlpha(): number {
-    if (this.isMini || this.outfit !== "pumpkin") return 0;
-    return Math.min(1, this.outfitPresence * 2.5) * (1 - this.morph);
-  }
-
   private drawBody(x: CanvasRenderingContext2D, body: Path2D, R: number, rx: number, ry: number) {
-    const pumpkin = this.pumpkinAlpha;
+    void rx;
+    void ry;
     if (this.bodyColor) {
       // Mini bots: flat solid fill — no gradient, no reflection, no highlight
       x.fillStyle = rgba(this.bodyColor, 1);
       x.fill(body);
-      if (pumpkin <= 0.001) return;
-    } else {
-      const g = x.createLinearGradient(rx * 0.7, -ry * 0.85, -rx * 0.8, ry * 0.9);
-      g.addColorStop(0, rgba(BASE_TOP));
-      g.addColorStop(1, rgba(BASE_BOTTOM));
-      x.fillStyle = g;
-      x.fill(body);
+      return;
     }
     x.save();
-    if (pumpkin > 0.001) {
-      const pg = x.createLinearGradient(rx * 0.7, -ry * 0.85, -rx * 0.8, ry * 0.9);
-      pg.addColorStop(0, PUMPKIN_BODY[0]);
-      pg.addColorStop(1, PUMPKIN_BODY[1]);
-      x.globalAlpha = pumpkin;
-      x.fillStyle = pg;
-      x.fill(body);
-      // A flat-coloured body only gets the shading while it is a pumpkin.
-      x.globalAlpha = this.bodyColor ? pumpkin : 1;
-    }
+    // Teal halo around the orb.
+    const halo = x.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 1.6);
+    halo.addColorStop(0, rgba(HALO, 0.55));
+    halo.addColorStop(1, rgba(HALO, 0));
+    x.fillStyle = halo;
+    x.beginPath();
+    x.arc(0, 0, R * 1.6, 0, Math.PI * 2);
+    x.fill();
+    // Orb core: aqua top melting into deep indigo.
+    const g = x.createLinearGradient(0, -R, 0, R);
+    g.addColorStop(0, rgba(BASE_TOP));
+    g.addColorStop(1, rgba(BASE_BOTTOM));
+    x.fillStyle = g;
+    x.fill(body);
 
     const effectiveTint = this.tint * (1 - this.morph);
     if (effectiveTint > 0.01) {
@@ -1101,76 +1061,6 @@ export class BotEngine {
       }
     }
     x.restore();
-  }
-
-  /** Hands sit behind the body — drawn before it, in world coordinates. */
-  private drawHandsBehind(
-    x: CanvasRenderingContext2D,
-    R: number, rx: number, ry: number, cx: number, cy: number,
-  ) {
-    if (this.hands <= 0.01 || this.isMini) return;
-    if (R <= 14) return; // meaningless at compact/peek sizes
-
-    const n = now();
-    const bodyH = 2 * ry;
-    const hew = 0.3 * ry * this.hands;
-    const heh = 0.26 * ry * this.hands;
-    const hwB = rx * this.sx;
-    const hhB = ry * this.sy;
-    const isWaving = n >= this.waveStart && this.waveStart > 0 && n < this.waveUntil;
-
-    for (const sd of [-1, 1]) {
-      let localX: number;
-      let localY: number;
-      let handRot = 0;
-
-      if (sd > 0 && isWaving) {
-        const wt = n - this.waveStart;
-        const rise = Math.min(1, wt / 0.18);
-        const riseEased = 1 - Math.pow(1 - rise, 3);
-        const restX = hwB * 1.08;
-        const restY = hhB * 0.7;
-        const oscX = Math.cos(13 * wt) * 0.06 * bodyH;
-        const oscY = -Math.sin(13 * wt) * 0.14 * bodyH;
-        const waveX = hwB * 1.1 + oscX;
-        const waveY = -hhB * 0.15 + oscY;
-        localX = restX + (waveX - restX) * riseEased;
-        localY = restY + (waveY - restY) * riseEased;
-        handRot = (-0.5 + Math.sin(13 * wt) * 0.35) * riseEased;
-      } else if (sd < 0 && isWaving) {
-        const wt = n - this.waveStart;
-        localX = -hwB * 1.08;
-        localY = hhB * 0.7 + Math.sin(6 * wt) * 0.04 * bodyH;
-      } else {
-        localX = sd * hwB * 1.08;
-        localY = hhB * 0.7;
-      }
-
-      const cosT = Math.cos(this.tilt);
-      const sinT = Math.sin(this.tilt);
-      const worldX = cx + cosT * localX - sinT * localY;
-      const worldY = cy + sinT * localX + cosT * localY;
-
-      x.save();
-      x.translate(worldX, worldY);
-      if (handRot !== 0) x.rotate(handRot);
-      const g = x.createLinearGradient(hew * 0.7, -heh * 0.85, -hew * 0.8, heh * 0.9);
-      if (this.bodyColor) {
-        g.addColorStop(0, rgba(mix3(this.bodyColor, [1, 1, 1], 0.35)));
-        g.addColorStop(1, rgba(this.bodyColor));
-      } else {
-        g.addColorStop(0, rgba(BASE_TOP));
-        g.addColorStop(1, rgba(BASE_BOTTOM));
-      }
-      x.beginPath();
-      x.ellipse(0, 0, hew, heh, 0, 0, Math.PI * 2);
-      x.fillStyle = g;
-      x.fill();
-      x.strokeStyle = "rgba(0,0,0,0.08)";
-      x.lineWidth = 1;
-      x.stroke();
-      x.restore();
-    }
   }
 
   private drawBadge(x: CanvasRenderingContext2D, badge: Badge, R: number, cx: number, cy: number) {

@@ -25,17 +25,17 @@ export const DEFAULT_OUTFIT: OutfitSelection = "auto";
 export const OUTFIT_KEYS: Record<OutfitSelection, string> = {
   auto: N_("Auto (seasons)"),
   none: N_("None"),
-  partyHat: N_("Party hat"),
-  beanie: N_("Beanie"),
-  crown: N_("Crown"),
-  sunglasses: N_("Sunglasses"),
-  roundGlasses: N_("Round glasses"),
-  bow: N_("Bow"),
-  scarf: N_("Scarf"),
-  witchHat: N_("Witch hat"),
-  pumpkin: N_("Pumpkin"),
-  santaHat: N_("Santa hat"),
-  bunnyEars: N_("Bunny ears"),
+  partyHat: N_("Party aura"),
+  beanie: N_("Glacier aura"),
+  crown: N_("Royal aura"),
+  sunglasses: N_("Slate aura"),
+  roundGlasses: N_("Lagoon aura"),
+  bow: N_("Bloom aura"),
+  scarf: N_("Ember aura"),
+  witchHat: N_("Hex aura"),
+  pumpkin: N_("Pumpkin aura"),
+  santaHat: N_("Festive aura"),
+  bunnyEars: N_("Moon aura"),
 };
 
 /** In the current language: every read goes through `t()`. */
