@@ -1111,6 +1111,11 @@ mod tests {
     #[test]
     fn unexpected_types_are_refused_for_every_json_agent() {
         for agent in Agent::ALL {
+            // DCode writes no files: there is nothing malformed to refuse.
+            if agent == Agent::DCode {
+                assert!(agent.files(&scratch("odd-dcode")).is_empty());
+                continue;
+            }
             let home = scratch(&format!("odd-{}", agent.id()));
             let file = agent.files(&home)[0].clone();
             if file.extension().is_some_and(|e| e == "json") {
@@ -1266,7 +1271,7 @@ mod tests {
     #[test]
     fn only_codex_copilot_and_muse_take_approvals() {
         let with: Vec<&str> = Agent::ALL.iter().filter(|a| a.approvals()).map(|a| a.id()).collect();
-        assert_eq!(with, ["codex", "copilot", "muse"]);
+        assert_eq!(with, ["dcode", "codex", "copilot", "muse"]);
     }
 
     #[test]
