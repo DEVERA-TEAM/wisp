@@ -34,6 +34,8 @@ const KEY_STORE = navigator.userAgent.includes("Windows")
 
 let settings: Settings = { ...DEFAULT_SETTINGS };
 let version = "";
+/** True when DCode launched Wisp as its managed sidecar (from boot). */
+let managed = false;
 
 const windowRoot = document.getElementById("hub")!;
 /** Where the Notch page being shown draws its sections. */
@@ -972,6 +974,11 @@ function generalSection(): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("General") })),
+    // Managed by DCode: say who owns this window, so it never reads as a
+    // second standalone app next to DCode.
+    ...(managed
+      ? [h("div", { class: "notice", text: t("Managed by DCode — autostart and updates live in DCode's settings.") })]
+      : []),
     h("div", { class: "row" },
       h("label", { text: t("Sound") }),
       toggle(settings.soundEnabled, (v) => { settings.soundEnabled = v; void save(); }),
@@ -993,10 +1000,17 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Island lives on") }),
       screen,
     ),
-    h("div", { class: "row" },
-      h("label", { text: t("Launch at startup") }),
-      toggle(settings.autostart, (v) => { settings.autostart = v; void save(); }),
-    ),
+    // Managed by DCode: DCode spawns Wisp itself, so Wisp's own login-item
+    // switch would start a second Wisp outside DCode. Show where it lives.
+    ...(managed
+      ? [h("div", { class: "row" },
+          h("label", { text: t("Launch at startup") }),
+          h("span", { class: "hint", text: t("On with DCode's companion — see DCode's settings.") }),
+        )]
+      : [h("div", { class: "row" },
+          h("label", { text: t("Launch at startup") }),
+          toggle(settings.autostart, (v) => { settings.autostart = v; void save(); }),
+        )]),
     ...recapRows(),
     languageRow(),
   );
@@ -1305,6 +1319,7 @@ async function main() {
   if (boot) {
     settings = { ...settings, ...boot.settings };
     version = boot.version;
+    managed = boot.managed === true;
   }
   setLanguage(resolveLanguage(settings.language, systemLanguages()));
   applyDirection();

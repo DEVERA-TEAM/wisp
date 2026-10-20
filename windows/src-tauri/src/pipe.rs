@@ -216,6 +216,23 @@ async fn handle(app: AppHandle, mut pipe: impl Relay) {
     // Counts for the weekly recap — never the command, path or prompt itself.
     crate::recap::observe(&app, &payload);
 
+    // DCode driving its managed sidecar: open the hub on a page. Only when
+    // managed and tagged as DCode's own command; never counted as agent
+    // activity, never forwarded to the island.
+    if event == "DcodeCommand" {
+        let is_dcode = payload.get("coucou_agent").and_then(Value::as_str) == Some("dcode");
+        if is_dcode && crate::settings::is_managed() {
+            let page = payload.get("page").and_then(Value::as_str).map(str::to_string);
+            log::line(format!(
+                "dcode command open-hub page={}",
+                page.as_deref().unwrap_or("default")
+            ));
+            crate::show_hub(&app, page.as_deref());
+        }
+        pipe.finish();
+        return;
+    }
+
     if event != "PermissionRequest" {
         // The status line relay calls in with every Claude Code update: not log-worthy.
         if event != "StatusLine" {

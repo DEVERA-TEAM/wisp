@@ -185,10 +185,15 @@ pub fn load() -> Settings {
     apply_dcode_env(settings)
 }
 
+/// True when DCode launched Wisp as its managed sidecar.
+pub fn is_managed() -> bool {
+    std::env::var("WISP_MANAGED_BY").as_deref() == Ok("dcode")
+}
+
 /// DCode launches Wisp as its own: env seeds the first-run defaults so the
 /// overlay is DCode-first with no clicks. Stored settings always win later.
 fn apply_dcode_env(mut settings: Settings) -> Settings {
-    if std::env::var("WISP_MANAGED_BY").as_deref() != Ok("dcode") {
+    if !is_managed() {
         return settings;
     }
     // Main pill: DCode unless the stored value names a real pill.
@@ -197,10 +202,12 @@ fn apply_dcode_env(mut settings: Settings) -> Settings {
     if settings.chat_provider.is_empty() {
         settings.chat_provider = "dcode".into();
     }
-    if settings.custom_url.is_empty() {
+    // The `dcode` provider reads `dcode_url` (see local_chat.rs); seed that,
+    // not `custom_url`.
+    if settings.dcode_url.is_empty() {
         if let Ok(url) = std::env::var("WISP_DCODE_URL") {
             if !url.trim().is_empty() {
-                settings.custom_url = url;
+                settings.dcode_url = url;
             }
         }
     }

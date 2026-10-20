@@ -30,6 +30,8 @@ export interface BootInfo {
   hookPath: string;
   /** False where the OS has no global cursor (Wayland): see Island.followPageCursor. */
   cursorPoll: boolean;
+  /** True when DCode launched Wisp as its managed sidecar. */
+  managed: boolean;
 }
 
 /** The phone link (src-tauri/src/phone_link): how it is, never its secrets. */

@@ -68,6 +68,9 @@ pub struct BootInfo {
     /// False where the OS has no global cursor (Wayland): the page then reports
     /// the cursor from its own mouse events.
     cursor_poll: bool,
+    /// True when DCode launched Wisp as its managed sidecar: DCode owns
+    /// autostart (it spawns Wisp itself), and the settings window says so.
+    managed: bool,
 }
 
 #[tauri::command]
@@ -84,6 +87,7 @@ fn boot(app: AppHandle, shared: State<Shared>) -> BootInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         hook_path: settings::hook_exe_path().to_string_lossy().to_string(),
         cursor_poll: platform::CURSOR_POLL,
+        managed: settings::is_managed(),
     }
 }
 
@@ -115,7 +119,9 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     if let Err(err) = settings::save(&settings) {
         log::line(format!("could not save settings: {err}"));
     }
-    if autostart_changed {
+    if autostart_changed && !settings::is_managed() {
+        // Managed by DCode: DCode spawns Wisp itself, so Wisp must never
+        // write its own login item — that is what opens a second Wisp.
         let manager = app.autolaunch();
         let result = if settings.autostart { manager.enable() } else { manager.disable() };
         if let Err(err) = result {
@@ -904,13 +910,19 @@ pub fn run() {
             integrations::start(handle.clone());
             spotify::sync(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);
-            if loaded.autostart {
+            if loaded.autostart && !settings::is_managed() {
                 // Login items written before 0.5 start Wisp without --autostart:
                 // writing it again adds it, so the window stays hidden at login.
+                // Managed by DCode: DCode spawns Wisp itself, so Wisp must never
+                // write its own login item — that is what starts a second Wisp.
                 let _ = handle.autolaunch().enable();
             }
             let open_window = flow::get(&handle).map(|f| f.store.lock().unwrap().prefs.open_at_launch).unwrap_or(true);
-            if open_window && !launched_at_login() {
+            // Managed by DCode: the hub never pops up on its own — the tray
+            // opens it on demand, and DCode's settings can ask for it over
+            // the relay. An auto-opening second window is what reads as
+            // "another app".
+            if open_window && !launched_at_login() && !settings::is_managed() {
                 show_hub(&handle, None);
             }
             Ok(())
