@@ -101,10 +101,12 @@ pub enum Agent {
     OpenCode,
     Amp,
     Hermes,
+    DCode,
 }
 
 impl Agent {
     pub const ALL: &'static [Agent] = &[
+        Agent::DCode,
         Agent::Codex,
         Agent::Copilot,
         Agent::Muse,
@@ -119,6 +121,7 @@ impl Agent {
     /// The `--agent` name; the pill is `agent_<id>` (PillCatalog.swift).
     pub fn id(self) -> &'static str {
         match self {
+            Agent::DCode => "dcode",
             Agent::Gemini => "gemini",
             Agent::Antigravity => "antigravity",
             Agent::Cursor => "cursor",
@@ -138,6 +141,10 @@ impl Agent {
     /// The files this agent's install touches, under `home`.
     fn files(self, home: &Path) -> Vec<PathBuf> {
         match self {
+            // DCode installs nothing itself: its agent emits hook events straight
+            // to the relay while it runs. The entry exists so the Agents page
+            // shows DCode as pre-connected.
+            Agent::DCode => vec![],
             Agent::Gemini => vec![home.join(".gemini").join("settings.json")],
             Agent::Antigravity => vec![home.join(".gemini").join("config").join("hooks.json")],
             Agent::Cursor => vec![home.join(".cursor").join("hooks.json")],
@@ -156,6 +163,10 @@ impl Agent {
 
     /// The edits that install (or remove) Wisp for this agent.
     fn edits(self, home: &Path, relay: &Relay, install: bool) -> Vec<FileEdit<'static>> {
+        // DCode needs no files and takes no clicks: it is wired at runtime.
+        if self == Agent::DCode {
+            return vec![];
+        }
         let files = self.files(home);
         if let Some(contents) = self.plugin(relay) {
             return files.into_iter().zip(contents).map(|(path, text)| plugin_edit(path, text, install)).collect();
@@ -233,12 +244,18 @@ impl Agent {
             (Agent::OpenCode | Agent::Amp | Agent::Hermes, _) => {
                 Box::new(|_| Err(crate::i18n::t("This agent takes a plugin, not hook entries.")))
             }
+            // DCode is pre-wired at runtime; there is nothing to write.
+            (Agent::DCode, _) => Box::new(|v| Ok(Some(v.clone()))),
         }
     }
 
     /// True when the agent's config already routes to Wisp. Never fails: a
-    /// file we cannot read just reads as "not installed".
+    /// file we cannot read just reads as "not installed". DCode needs no
+    /// files: its agent emits hook events straight to the relay at runtime.
     fn installed(self, home: &Path) -> bool {
+        if self == Agent::DCode {
+            return true;
+        }
         let files = self.files(home);
         if matches!(self, Agent::OpenCode | Agent::Amp | Agent::Hermes) {
             return std::fs::read_to_string(&files[0]).is_ok_and(|text| is_our_plugin(&text));
@@ -267,7 +284,7 @@ impl Agent {
     /// Whether the island can answer this agent's permission requests. Must
     /// match `takes_decisions` in the relay (hook/src/reply.rs).
     fn approvals(self) -> bool {
-        matches!(self, Agent::Codex | Agent::Copilot | Agent::Muse)
+        matches!(self, Agent::DCode | Agent::Codex | Agent::Copilot | Agent::Muse)
     }
 }
 
@@ -278,6 +295,7 @@ impl Agent {
 impl Agent {
     pub fn name(self) -> &'static str {
         match self {
+            Agent::DCode => "DCode",
             Agent::Gemini => "Gemini CLI",
             Agent::Antigravity => "Antigravity",
             Agent::Cursor => "Cursor Agent",
@@ -294,6 +312,7 @@ impl Agent {
     fn note(self) -> String {
         use crate::i18n::t;
         match self {
+            Agent::DCode => t("Built in: DCode reports its sessions and asks from here while it runs."),
             Agent::Gemini => t("Start a new Gemini CLI session to pick the hooks up."),
             Agent::Antigravity => t("Start a new Antigravity conversation to pick the hooks up."),
             Agent::Cursor => t("Restart Cursor to pick the hooks up."),
@@ -346,12 +365,20 @@ pub fn list() -> Vec<AgentStatus> {
 
 pub fn preview(id: &str, install: bool) -> Result<Plan, String> {
     let agent = find(id)?;
+    // DCode is pre-wired: no preview, nothing to write.
+    if agent == Agent::DCode {
+        return Err(crate::i18n::t("DCode is already connected — nothing to install."));
+    }
     config_file::preview(&agent.edits(&platform::home_dir(), &Relay::current(), install))
 }
 
 /// Only ever called from an explicit click. Returns the backups taken, one per line.
 pub fn apply(id: &str, install: bool, fingerprint: &str) -> Result<String, String> {
     let agent = find(id)?;
+    // DCode is pre-wired: install and uninstall are no-ops.
+    if agent == Agent::DCode {
+        return Ok(String::new());
+    }
     apply_in(agent, &platform::home_dir(), &Relay::current(), install, fingerprint)
 }
 

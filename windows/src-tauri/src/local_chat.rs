@@ -88,8 +88,18 @@ pub struct Server {
     pub key: Option<String>,
 }
 
-/// Ollama, LM Studio or "custom", from the settings; None for any other id.
+/// Ollama, LM Studio, DCode or "custom", from the settings; None for any other id.
 pub fn server(settings: &Settings, id: &str) -> Option<Server> {
+    if id == "dcode" {
+        // DCode's own provider: URL from settings (seeded by DCode at launch),
+        // key minted per session by DCode and handed over the relay (never stored).
+        return Some(Server {
+            id: "dcode",
+            name: "DCode",
+            url: settings.dcode_url.clone(),
+            key: dcode_key(),
+        });
+    }
     let (id, name, url, key) = match id {
         "ollama" => ("ollama", "Ollama", &settings.ollama_url, None),
         "lmstudio" => ("lmstudio", "LM Studio", &settings.lmstudio_url, None),
@@ -100,6 +110,12 @@ pub fn server(settings: &Settings, id: &str) -> Option<Server> {
         _ => return None,
     };
     Some(Server { id, name, url: url.clone(), key })
+}
+
+/// DCode's session key, handed over the relay at spawn and kept only in
+/// memory: never written to settings, never to the credential store.
+fn dcode_key() -> Option<String> {
+    std::env::var("WISP_DCODE_KEY").ok().filter(|v| !v.trim().is_empty())
 }
 
 /// The usual address of a server on this machine; none for "custom". Ollama's
@@ -147,7 +163,7 @@ pub struct Connected {
 pub async fn connect(id: &str, typed: &str) -> Result<Connected, String> {
     let raw = if typed.trim().is_empty() { usual_address(id).unwrap_or_default() } else { typed.to_string() };
     let url = net::normalise_server_url(&raw)?;
-    let key = if id == "custom" { custom_key_for(&url) } else { None };
+    let key = if id == "custom" { custom_key_for(&url) } else if id == "dcode" { dcode_key() } else { None };
     let models = list(&url, key.as_deref()).await?;
     Ok(Connected {
         url: url.as_str().trim_end_matches('/').to_string(),
@@ -280,6 +296,11 @@ pub async fn send_with(
     let base = base_url(server)?;
     if model.is_empty() {
         return Err(t("Pick a model above the chat box first."));
+    }
+    // DCode's key is minted per session by DCode itself; without it the chat
+    // has nothing to send. Sign in to DCode and reopen the chat.
+    if server.id == "dcode" && server.key.as_deref().filter(|k| !k.is_empty()).is_none() {
+        return Err(t("Sign in to DCode first — Wisp borrows its session key."));
     }
     let turn = chat.begin(server.id);
     let user = json!({ "role": "user", "content": user_text(turn.first, context.as_ref(), &query) });

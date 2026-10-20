@@ -128,6 +128,8 @@ export interface Settings {
   ollamaUrl: string;
   lmstudioUrl: string;
   customUrl: string;
+  /** DCode's own chat endpoint, seeded by DCode at launch; empty means DCode never ran Wisp. */
+  dcodeUrl: string;
   /** Global shortcuts the user changed, by action id (see core/shortcuts.ts). */
   shortcuts: Bindings;
   /**
@@ -186,6 +188,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ollamaUrl: "",
   lmstudioUrl: "",
   customUrl: "",
+  dcodeUrl: "",
   shortcuts: {},
   wispOutfit: DEFAULT_OUTFIT,
   pillColors: {},

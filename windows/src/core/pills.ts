@@ -72,6 +72,8 @@ const ACCENT = {
 
 export const PILL_CATALOG: readonly PillDefinition[] = [
   // ── Where you code ─────────────────────────────────────────────────────────
+  { id: "agent_dcode", name: "DCode", color: "#38BDF8", category: "workspace",
+    subtitle: N_("Integration"), source: "agent", support: "yes", connect: hooks },
   { id: "integration_claude", name: "Claude Code", color: "#F5F6F8", category: "workspace",
     subtitle: N_("Integration"), source: "claudeCode", support: "yes", connect: hooks },
   // Claude Code in Cursor's terminal: the same hooks as Claude Code.
@@ -137,7 +139,7 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
 ];
 
 /** The always-on pill unless the user picks another workspace tool. */
-export const DEFAULT_MAIN_PILL = "integration_claude";
+export const DEFAULT_MAIN_PILL = "agent_dcode";
 
 /** How many declared pills may sit next to the main one. */
 export const MAX_DECLARED = 4;

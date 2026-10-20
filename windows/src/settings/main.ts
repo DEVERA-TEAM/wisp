@@ -599,12 +599,14 @@ function chatProvidersSection(
 
 // ── Local models section ──────────────────────────────────────────────────────
 
-type LocalId = "ollama" | "lmstudio" | "custom";
+type LocalId = "ollama" | "lmstudio" | "custom" | "dcode";
 
 /** Redraws the local models section after a change made elsewhere (the island). */
 let localRedraw: (() => void) | null = null;
 
 const LOCAL: Record<LocalId, { name: string; usual: string }> = {
+  // DCode first: its address is seeded by DCode, its key arrives per session.
+  dcode: { name: "DCode", usual: "" },
   ollama: { name: "Ollama", usual: "http://127.0.0.1:11434" },
   lmstudio: { name: "LM Studio", usual: "http://127.0.0.1:1234" },
   // No usual address: any server that speaks the OpenAI API.
@@ -653,6 +655,30 @@ function localSection(customKey: boolean): HTMLElement {
       h("span", { text: t(def.name) }),
     );
     const block = h("div", { style: "display:flex;flex-direction:column;gap:6px" });
+
+    // DCode is owned by DCode: no address typing, no key entry, no
+    // disconnect — its key is minted per session and never stored.
+    if (id === "dcode") {
+      if (connected) {
+        const inUse = settings.chatProvider === id;
+        const use = h("button", { class: inUse ? "" : "primary", text: inUse ? CHAT_STRINGS.inUse : CHAT_STRINGS.useInChat });
+        use.disabled = inUse;
+        use.addEventListener("click", () => {
+          settings.chatProvider = id;
+          void save().then(redraw);
+        });
+        block.append(
+          h("div", { class: "row" }, label, h("span", { class: "path", text: settings[field] }), statusDot(true), use),
+          h("div", { class: "hint", text: t("Provided by DCode — sign in to DCode and its models answer here.") }),
+        );
+      } else {
+        block.append(
+          h("div", { class: "row" }, label, statusDot(false)),
+          h("div", { class: "hint", text: t("Start DCode once with the companion on, then pick DCode above the chat box.") }),
+        );
+      }
+      return block;
+    }
 
     if (connected) {
       const inUse = settings.chatProvider === id;
@@ -1298,11 +1324,11 @@ async function main() {
 
   void onEvent<ShortcutsReport>("shortcuts-status", (fresh) => shortcutsListener?.report(fresh));
   void onEvent<Settings>("settings-changed", (s) => {
-    const before = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}`;
+    const before = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}|${settings.dcodeUrl}`;
     settings = { ...settings, ...s };
     shortcutsListener?.settingsChanged();
     for (const redraw of declaredViews) redraw();
-    const after = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}`;
+    const after = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}|${settings.dcodeUrl}`;
     if (before !== after) localRedraw?.();
     applyLanguage();
   });

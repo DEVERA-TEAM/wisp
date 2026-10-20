@@ -61,6 +61,20 @@ function agentBlock(initial: AgentHookStatus): HTMLElement {
   const body = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
   const block = h("div", { style: "display:flex;flex-direction:column;gap:8px" }, head, body);
 
+  // DCode is wired at runtime, not through config files: show it as
+  // connected with no install or uninstall buttons.
+  if (status.id === "dcode") {
+    head.append(
+      h("div", { style: "display:flex;align-items:center;gap:8px;min-width:132px" },
+        statusDot(true),
+        h("span", { style: "font-size:12.5px", text: status.name }),
+      ),
+      h("span", { class: "hint", text: TEXT.approvals }),
+    );
+    body.append(h("span", { class: "path", text: status.note }));
+    return block;
+  }
+
   async function refresh() {
     const fresh = (await Bridge.agentHooksList())?.find((a) => a.id === status.id);
     if (fresh) status = fresh;

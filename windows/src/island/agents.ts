@@ -8,6 +8,7 @@ export interface KnownAgent {
 }
 
 export const KNOWN_AGENTS: Record<string, KnownAgent> = {
+  dcode: { name: "DCode", color: "#38BDF8" },
   cursor: { name: "Cursor", color: "#C0C4CC" },
   antigravity: { name: "Antigravity", color: "#E879F9" },
   codex: { name: "Codex", color: "#2DD4BF" },

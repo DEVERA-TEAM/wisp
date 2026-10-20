@@ -50,6 +50,9 @@ pub struct Settings {
     pub lmstudio_url: String,
     /// Any other OpenAI-compatible server; its key, if any, is in the keychain.
     pub custom_url: String,
+    /// DCode's own chat endpoint, seeded by DCode at launch via WISP_DCODE_URL;
+    /// its key arrives per session over the relay and is never stored.
+    pub dcode_url: String,
     /// Global shortcuts the user changed, by action id; the others keep their
     /// default (see shortcuts.rs).
     pub shortcuts: crate::shortcuts::Bindings,
@@ -134,7 +137,7 @@ impl Default for Settings {
                 "integration_vercel".into(),
                 "integration_github".into(),
             ],
-            main_pill: "integration_claude".into(),
+            main_pill: "agent_dcode".into(),
             screen: "primary".into(),
             autostart: false,
             hooks_installed: false,
@@ -147,6 +150,7 @@ impl Default for Settings {
             ollama_url: String::new(),
             lmstudio_url: String::new(),
             custom_url: String::new(),
+            dcode_url: String::new(),
             shortcuts: Default::default(),
             wisp_outfit: "auto".into(),
             pill_colors: BTreeMap::new(),
@@ -177,7 +181,30 @@ fn settings_path() -> PathBuf {
 }
 
 pub fn load() -> Settings {
-    load_from(&settings_path())
+    let settings = load_from(&settings_path());
+    apply_dcode_env(settings)
+}
+
+/// DCode launches Wisp as its own: env seeds the first-run defaults so the
+/// overlay is DCode-first with no clicks. Stored settings always win later.
+fn apply_dcode_env(mut settings: Settings) -> Settings {
+    if std::env::var("WISP_MANAGED_BY").as_deref() != Ok("dcode") {
+        return settings;
+    }
+    // Main pill: DCode unless the stored value names a real pill.
+    settings.main_pill = "agent_dcode".into();
+    // Default the chat to DCode's own OpenAI-compatible provider.
+    if settings.chat_provider.is_empty() {
+        settings.chat_provider = "dcode".into();
+    }
+    if settings.custom_url.is_empty() {
+        if let Ok(url) = std::env::var("WISP_DCODE_URL") {
+            if !url.trim().is_empty() {
+                settings.custom_url = url;
+            }
+        }
+    }
+    settings
 }
 
 pub fn save(settings: &Settings) -> std::io::Result<()> {
@@ -434,6 +461,7 @@ mod tests {
   "ollamaUrl": "http://127.0.0.1:11434",
   "lmstudioUrl": "http://127.0.0.1:1234",
   "customUrl": "https://llm.example.com",
+  "dcodeUrl": "https://devera-labs.com",
   "shortcuts": { "openChat": { "keys": "Ctrl+Shift+K", "enabled": false } },
   "wispOutfit": "witchHat",
   "pillColors": { "integration_claude": "#2DD4BF" },
@@ -941,6 +969,7 @@ mod tests {
                 "ollamaUrl",
                 "lmstudioUrl",
                 "customUrl",
+                "dcodeUrl",
                 "shortcuts",
                 "wispOutfit",
                 "pillColors",
