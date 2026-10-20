@@ -1112,7 +1112,7 @@ mod tests {
     fn unexpected_types_are_refused_for_every_json_agent() {
         for agent in Agent::ALL {
             // DCode writes no files: there is nothing malformed to refuse.
-            if agent == Agent::DCode {
+            if *agent == Agent::DCode {
                 assert!(agent.files(&scratch("odd-dcode")).is_empty());
                 continue;
             }
