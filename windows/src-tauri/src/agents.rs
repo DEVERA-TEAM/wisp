@@ -268,6 +268,9 @@ impl Agent {
                 .unwrap_or_else(|| json!({}))
         };
         match self {
+            // DCode is pre-connected at runtime; the file check below is for
+            // config-file agents only. (installed() returns true early.)
+            Agent::DCode => false,
             Agent::Gemini => groups_have_ours(&json(), "gemini"),
             Agent::Antigravity => json().get("wisp").is_some_and(antigravity_is_ours),
             Agent::Cursor => groups_have_ours(&json(), "cursor"),
