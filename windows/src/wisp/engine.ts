@@ -74,16 +74,17 @@ const HALO: RGB = [0.176, 0.831, 0.749]; // #2DD4BF teal halo
 const MINI_INK = "rgb(16,19,26)"; // #10131A
 
 const C = {
-  idle: [0.902, 0.914, 0.933] as RGB,
-  working: [0.231, 0.62, 1] as RGB,
-  thinking: [0.545, 0.361, 0.965] as RGB,
-  searching: [0.388, 0.396, 0.949] as RGB,
-  approval: [0.961, 0.647, 0.141] as RGB,
-  question: [0.133, 0.827, 0.933] as RGB,
+  // DCode night palette: sky/teal/violet family, never grey-on-black.
+  idle: [0.22, 0.741, 0.973] as RGB, // sky-400
+  working: [0.22, 0.741, 0.973] as RGB, // sky-400
+  thinking: [0.486, 0.349, 0.929] as RGB, // violet-600
+  searching: [0.13, 0.588, 0.953] as RGB, // sky-600
+  approval: [0.961, 0.62, 0.043] as RGB, // amber-500
+  question: [0.176, 0.831, 0.749] as RGB, // teal-400
   error: [0.957, 0.314, 0.369] as RGB,
-  finished: [0.204, 0.831, 0.6] as RGB,
+  finished: [0.204, 0.831, 0.6] as RGB, // emerald-ish
   ratelimit: [0.984, 0.573, 0.235] as RGB,
-  sleeping: [0.58, 0.635, 0.722] as RGB,
+  sleeping: [0.42, 0.477, 0.62] as RGB,
   dizzy: [0.957, 0.447, 0.714] as RGB,
 };
 

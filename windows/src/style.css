@@ -74,17 +74,24 @@ body {
   position: absolute;
   top: 0;
   left: 50%;
-  background: #000;
-  border-radius: 0 0 14px 14px;
+  /* DCode night: deep navy instead of pure black, with a sky-teal rim. */
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 60%, #111c33 100%);
+  border-radius: 0 0 18px 18px;
+  border-left: 1px solid rgba(56, 189, 248, 0.22);
+  border-right: 1px solid rgba(56, 189, 248, 0.22);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 8px 32px rgba(2, 132, 199, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
   overflow: visible;
   will-change: width, height, transform;
 }
 
+/* Breathing room: nothing touches the island's edges anymore. */
 #island-clip {
   position: absolute;
   inset: 0;
   overflow: hidden;
   border-radius: inherit;
+  padding: 6px 14px;
 }
 
 #bot-canvas,

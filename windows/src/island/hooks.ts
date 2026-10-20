@@ -321,6 +321,8 @@ function handleHook(island: Island, payload: HookPayload) {
       if (validAgent === "hermes" && payload.platform && payload.platform !== "cli") {
         State.appendStep(agentId, payload.platform.charAt(0).toUpperCase() + payload.platform.slice(1));
       }
+      // DCode waking up gets a bright-eyed hello.
+      if (validAgent === "dcode") island.emote("surprised");
       surface("overview", false);
       Sound.play("work");
       break;
@@ -368,6 +370,8 @@ function handleHook(island: Island, payload: HookPayload) {
       supersedeStop();
       State.updateTask(agentId, "working");
       State.appendStep(agentId, t("⚠ failed"));
+      // DCode's own stumbles get a sympathetic wink, not a blank stare.
+      if (validAgent === "dcode") island.emote("wink");
       break;
 
     case "Notification": {
@@ -398,6 +402,8 @@ function handleHook(island: Island, payload: HookPayload) {
         if (t) t.finalLine = finalText;
       }
       Sound.play("finish");
+      // DCode's own finishes get a little party: the wisp does a happy bounce.
+      if (validAgent === "dcode") island.emote("happy");
       // A card waiting for an answer is never covered by another alert.
       if (focused && !State.pendingApproval) surface("finished", true);
       else State.setPillBadge(agentId, "finished");
